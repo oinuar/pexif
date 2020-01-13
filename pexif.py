@@ -28,17 +28,24 @@ if __name__ == "__main__":
 
     for root, directory, files in os.walk(source_directory):
         for file in files:
-            extension = file.split(".")[-1]
+            extension = file.split(".")[-1].lower()
             source = os.path.join(root, file)
         
             # Skip all non-jpeg files.
-            if extension.lower() not in ["jpg", "jpeg"]:
+            if extension not in ["jpg", "jpeg"]:
                 continue
 
             with open(source, "rb") as handle:
                 tags = exifread.process_file(handle)
-                date = datetime.strptime(tags["EXIF DateTimeOriginal"].printable, "%Y:%m:%d %H:%M:%S")
-                dest_directory = os.path.join(destination_directory, date.strftime("%Y/%m/%d"))
+
+                try:
+                    date = datetime.strptime(tags["EXIF DateTimeOriginal"].printable, "%Y:%m:%d %H:%M:%S")
+                    dest_directory = os.path.join(destination_directory, date.strftime("%Y/%m/%d"))
+
+                # Skip if exif date cannot be found or is invalid.
+                except (KeyError, ValueError):
+                    print("{} exif data does not contain a proper 'DateTimeOriginal' tag.".format(source))
+                    continue
 
             # Ensure that destination directory exists.
             try:
